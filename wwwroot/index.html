@@ -1,0 +1,707 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>RecEngine | AI Automotive Accessory Recommendations</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <style>
+        :root {
+            --bg-color: #f1f5f9;
+            --glass-bg: rgba(255, 255, 255, 0.85);
+            --glass-border: rgba(0, 0, 0, 0.08);
+            --accent-primary: #0284c7;
+            --accent-secondary: #4f46e5;
+            --text-main: #0f172a;
+            --text-dim: #64748b;
+            --card-bg: #ffffff;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: 'Inter', sans-serif;
+        }
+
+        body {
+            background-color: var(--bg-color);
+            color: var(--text-main);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            overflow-x: hidden;
+        }
+
+        /* Light Background Glow */
+        .bg-glow {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            z-index: -1;
+            background: radial-gradient(circle at 20% 20%, #e2e8f0 0%, transparent 40%),
+                radial-gradient(circle at 80% 80%, #dcfce7 0%, transparent 40%);
+        }
+
+        header {
+            padding: 2.5rem 2rem;
+            text-align: center;
+        }
+
+        header h1 {
+            font-weight: 800;
+            letter-spacing: -0.04em;
+            background: linear-gradient(to right, var(--accent-primary), var(--accent-secondary));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            font-size: 3rem;
+        }
+
+        header p {
+            color: var(--text-dim);
+            margin-top: 0.5rem;
+            font-weight: 500;
+        }
+
+        main {
+            flex: 1;
+            max-width: 1000px;
+            width: 100%;
+            margin: 0 auto;
+            padding: 0 1.5rem 4rem;
+        }
+
+        /* Search Section */
+        .search-container {
+            background: var(--glass-bg);
+            backdrop-filter: blur(16px);
+            border: 2px solid white;
+            padding: 2.5rem;
+            border-radius: 2rem;
+            box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+            margin-bottom: 2.5rem;
+            position: relative;
+            z-index: 100;
+            /* Ensure search stays on top */
+        }
+
+        .input-group {
+            position: relative;
+            display: flex;
+            gap: 1.25rem;
+            align-items: center;
+        }
+
+        .search-wrapper {
+            position: relative;
+            flex: 1;
+        }
+
+        input[type="text"] {
+            width: 100%;
+            background: #ffffff;
+            border: 2px solid #e2e8f0;
+            padding: 1.1rem 1.1rem 1.1rem 3.5rem;
+            border-radius: 1rem;
+            color: var(--text-main);
+            font-size: 1.15rem;
+            outline: none;
+            transition: all 0.25s;
+            box-shadow: inset 0 2px 4px 0 rgba(0, 0, 0, 0.05);
+        }
+
+        input[type="text"]:focus {
+            border-color: var(--accent-primary);
+            box-shadow: 0 0 0 4px rgba(2, 132, 199, 0.1), inset 0 2px 4px 0 rgba(0, 0, 0, 0.05);
+        }
+
+        .search-icon {
+            position: absolute;
+            left: 1.25rem;
+            top: 50%;
+            transform: translateY(-50%);
+            color: var(--text-dim);
+            width: 20px;
+            height: 20px;
+        }
+
+        select#region-select {
+            background: #ffffff;
+            border: 2px solid #e2e8f0;
+            padding: 1.1rem;
+            border-radius: 1rem;
+            color: var(--text-main);
+            font-size: 1rem;
+            cursor: pointer;
+            outline: none;
+            font-weight: 600;
+        }
+
+        button#get-recs {
+            background: linear-gradient(135deg, var(--accent-primary), var(--accent-secondary));
+            border: none;
+            padding: 1.1rem 2.5rem;
+            border-radius: 1rem;
+            color: white;
+            font-weight: 700;
+            cursor: pointer;
+            transition: all 0.2s;
+            box-shadow: 0 10px 15px -3px rgba(79, 70, 229, 0.3);
+        }
+
+        button#get-recs:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 20px 25px -5px rgba(79, 70, 229, 0.4);
+        }
+
+        /* Autosuggest Dropdown */
+        .suggestions {
+            position: absolute;
+            top: 100%;
+            left: 0;
+            right: 0;
+            background: #ffffff;
+            border: 2px solid #e2e8f0;
+            border-radius: 1rem;
+            margin-top: 0.75rem;
+            z-index: 2000;
+            /* Extremely high z-index */
+            max-height: 400px;
+            overflow-y: auto;
+            display: none;
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+        }
+
+        .suggestion-item {
+            padding: 1rem 1.25rem;
+            cursor: pointer;
+            border-bottom: 1px solid #f1f5f9;
+            transition: all 0.2s;
+        }
+
+        .suggestion-item:last-child {
+            border-bottom: none;
+        }
+
+        .suggestion-item:hover {
+            background: #f8fafc;
+        }
+
+        .suggestion-item .part-id {
+            font-weight: 700;
+            color: var(--accent-primary);
+            display: block;
+            font-size: 1.1rem;
+        }
+
+        .suggestion-item .part-desc {
+            font-size: 0.9rem;
+            color: var(--text-dim);
+            font-weight: 500;
+        }
+
+        /* Results Section - COMPACT */
+        .results-grid {
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 1rem;
+        }
+
+        .rec-card {
+            background: #ffffff;
+            border: 1px solid #e2e8f0;
+            border-radius: 1rem;
+            padding: 1.25rem 1.5rem;
+            display: flex;
+            gap: 1.5rem;
+            animation: slideUp 0.5s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+            opacity: 0;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+            transition: all 0.2s;
+            align-items: center;
+        }
+
+        .rec-card:hover {
+            transform: translateX(4px);
+            border-color: var(--accent-primary);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+        }
+
+        @keyframes slideUp {
+            from {
+                transform: translateY(20px);
+                opacity: 0;
+            }
+
+            to {
+                transform: translateY(0);
+                opacity: 1;
+            }
+        }
+
+        .rec-card .score-badge {
+            width: 54px;
+            height: 54px;
+            border-radius: 0.75rem;
+            background: #ecfdf5;
+            border: 2px solid #10b981;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 800;
+            color: #059669;
+            flex-shrink: 0;
+            font-size: 1rem;
+        }
+
+        .rec-card .content {
+            flex: 1;
+        }
+
+        .rec-card .header-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: baseline;
+            margin-bottom: 0.25rem;
+        }
+
+        .rec-card h3 {
+            font-size: 1.15rem;
+            font-weight: 700;
+            color: var(--text-main);
+        }
+
+        .rec-card .part-fits {
+            font-size: 0.75rem;
+            color: var(--accent-secondary);
+            font-weight: 600;
+            background: rgba(79, 70, 229, 0.05);
+            padding: 0.2rem 0.5rem;
+            border-radius: 0.4rem;
+        }
+
+        .rec-card .part-info {
+            font-size: 0.9rem;
+            color: var(--text-dim);
+            margin-bottom: 0.75rem;
+            font-weight: 500;
+        }
+
+        .rec-card .narrative {
+            font-style: normal;
+            color: #334155;
+            line-height: 1.5;
+            background: #f8fafc;
+            padding: 0.75rem 1rem;
+            border-left: 3px solid var(--accent-secondary);
+            border-radius: 0 0.5rem 0.5rem 0;
+            font-weight: 450;
+            font-size: 0.925rem;
+        }
+
+        /* Modal Tabs */
+        .modal-tabs {
+            display: flex;
+            background: #f1f5f9;
+            padding: 0.5rem;
+            gap: 0.5rem;
+        }
+
+        .modal-tab-btn {
+            background: transparent;
+            border: none;
+            padding: 0.5rem 1rem;
+            border-radius: 0.5rem;
+            cursor: pointer;
+            font-weight: 600;
+            color: var(--text-dim);
+            font-size: 0.85rem;
+        }
+
+        .modal-tab-btn.active {
+            background: white;
+            color: var(--accent-primary);
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+        }
+
+        .trace-content {
+            display: none;
+        }
+
+        .trace-content.active {
+            display: block;
+        }
+
+        .tab-btn {
+            background: #ffffff;
+            border: 1px solid #e2e8f0;
+            padding: 0.6rem 1.25rem;
+            border-radius: 0.75rem;
+            color: var(--text-dim);
+            cursor: pointer;
+            font-size: 0.9rem;
+            display: flex;
+            align-items: center;
+            gap: 0.6rem;
+            font-weight: 600;
+            box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+            transition: all 0.2s;
+            margin-bottom: 1rem;
+        }
+
+        .tab-btn:hover {
+            border-color: var(--accent-primary);
+            color: var(--accent-primary);
+            background: #f0f9ff;
+        }
+
+        /* Modal */
+        #prompt-modal {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(15, 23, 42, 0.6);
+            backdrop-filter: blur(8px);
+            z-index: 3000;
+            display: none;
+            align-items: center;
+            justify-content: center;
+            padding: 2rem;
+        }
+
+        .modal-content {
+            background: #ffffff;
+            border: 1px solid #e2e8f0;
+            max-width: 900px;
+            width: 100%;
+            max-height: 85vh;
+            border-radius: 2rem;
+            display: flex;
+            flex-direction: column;
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+            overflow: hidden;
+        }
+
+        .modal-header {
+            padding: 1.5rem 2rem;
+            border-bottom: 1px solid #f1f5f9;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .modal-header h3 {
+            font-weight: 800;
+            font-size: 1.5rem;
+        }
+
+        .modal-body {
+            padding: 2rem;
+            overflow-y: auto;
+            flex: 1;
+            font-family: 'JetBrains Mono', 'Fira Code', monospace;
+            white-space: pre-wrap;
+            color: #334155;
+            font-size: 0.9rem;
+            line-height: 1.6;
+            background: #f8fafc;
+        }
+
+        .close-btn {
+            background: #f1f5f9;
+            border: none;
+            color: var(--text-dim);
+            cursor: pointer;
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.2s;
+        }
+
+        .close-btn:hover {
+            background: #e2e8f0;
+            color: var(--text-main);
+        }
+
+        .loading {
+            text-align: center;
+            padding: 4rem;
+            display: none;
+        }
+
+        .spinner {
+            width: 50px;
+            height: 50px;
+            border: 5px solid #e2e8f0;
+            border-top: 5px solid var(--accent-primary);
+            border-radius: 50%;
+            animation: spin 0.8s linear infinite;
+            margin: 0 auto 1.5rem;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        .empty-state {
+            text-align: center;
+            padding: 5rem;
+            color: var(--text-dim);
+        }
+    </style>
+</head>
+
+<body>
+    <div class="bg-glow"></div>
+
+    <header>
+        <h1>RecEngine</h1>
+        <p>Advanced AI-Driven Automotive Accessory Recommendations</p>
+    </header>
+
+    <main>
+        <div class="tabs">
+            <button class="tab-btn" onclick="openPrompt()">
+                <i data-lucide="terminal"></i> Analysis Trace (QA)
+            </button>
+        </div>
+
+        <div class="search-container">
+            <div class="input-group">
+                <select id="region-select">
+                    <option value="US">🇺🇸 USA</option>
+                    <option value="CA">🇨🇦 CANADA</option>
+                </select>
+                <div class="search-wrapper">
+                    <i data-lucide="search" class="search-icon"></i>
+                    <input type="text" id="glass-search" placeholder="Search by ID or Part # (e.g. 1099 or DW0199)..."
+                        autocomplete="off">
+                    <div id="suggestions" class="suggestions"></div>
+                </div>
+                <button id="get-recs">Analyze</button>
+            </div>
+            <div id="target-fits-display" style="margin-top: 1rem; font-size: 0.9rem; color: var(--accent-primary); font-weight: 600; display: none;">
+                <i data-lucide="car" style="width: 16px; height: 16px; display: inline-block; vertical-align: text-bottom; margin-right: 0.5rem;"></i>
+                Target Glass: <span id="target-fits-text"></span>
+            </div>
+        </div>
+
+        <div id="loading" class="loading">
+            <div class="spinner"></div>
+            <p>Consulting with AI Parts Manager...</p>
+        </div>
+
+        <div id="results" class="results-grid">
+            <div class="empty-state">
+                <i data-lucide="package-search"
+                    style="width: 48px; height: 48px; margin-bottom: 1rem; opacity: 0.5;"></i>
+                <p>Select a glass part above to see recommended accessories.</p>
+            </div>
+        </div>
+    </main>
+
+    <div id="prompt-modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>QA Analysis Trace</h3>
+                <button class="close-btn" onclick="closePrompt()"><i data-lucide="x"></i></button>
+            </div>
+            <div class="modal-tabs">
+                <button class="modal-tab-btn active" onclick="showTab('sys')">System Prompt</button>
+                <button class="modal-tab-btn" onclick="showTab('req')">Raw Request</button>
+                <button class="modal-tab-btn" onclick="showTab('res')">Raw Response</button>
+            </div>
+            <div class="modal-body">
+                <div id="tab-sys" class="trace-content active">Loading...</div>
+                <div id="tab-req" class="trace-content">Perform an analysis to see raw data.</div>
+                <div id="tab-res" class="trace-content">Perform an analysis to see raw data.</div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        lucide.createIcons();
+
+        const searchInput = document.getElementById('glass-search');
+        const suggestionsDiv = document.getElementById('suggestions');
+        const regionSelect = document.getElementById('region-select');
+        const getRecsBtn = document.getElementById('get-recs');
+        const resultsDiv = document.getElementById('results');
+        const loadingDiv = document.getElementById('loading');
+        const promptModal = document.getElementById('prompt-modal');
+        const targetFitsDisplay = document.getElementById('target-fits-display');
+        const targetFitsText = document.getElementById('target-fits-text');
+
+        const tabSys = document.getElementById('tab-sys');
+        const tabReq = document.getElementById('tab-req');
+        const tabRes = document.getElementById('tab-res');
+
+        let selectedPartId = '';
+        let lastTrace = null;
+
+        // Autosuggest Logic
+        searchInput.addEventListener('input', async (e) => {
+            const query = e.target.value;
+            selectedPartId = ''; // Reset on new input
+            targetFitsDisplay.style.display = 'none'; // Hide fitment on change
+            
+            if (query.length < 2) {
+                suggestionsDiv.style.display = 'none';
+                return;
+            }
+
+            const res = await fetch(`/api/search?q=${encodeURIComponent(query)}`);
+            const data = await res.json();
+
+            if (data.length > 0) {
+                suggestionsDiv.innerHTML = data.map(item => `
+                    <div class="suggestion-item" onmousedown="selectPart('${item.id}', '${item.desc}')">
+                        <span class="part-id">${item.desc}</span>
+                        <span class="part-desc">Internal ID: ${item.id}</span>
+                    </div>
+                `).join('');
+                suggestionsDiv.style.display = 'block';
+            } else {
+                suggestionsDiv.innerHTML = '<div class="suggestion-item" style="cursor: default; color: var(--text-dim);">No matching parts found</div>';
+                suggestionsDiv.style.display = 'block';
+            }
+        });
+
+        async function selectPart(id, desc) {
+            selectedPartId = id;
+            searchInput.value = desc;
+            suggestionsDiv.style.display = 'none';
+            
+            // Optionally fetch fitment immediately if needed, or wait for analyze
+            // For now, we'll let the Analyze button handle the display or fetch it here.
+            // Let's fetch it here so the user sees it immediately.
+            const res = await fetch(`/api/search?q=${encodeURIComponent(desc)}`);
+            const data = await res.json();
+            const part = data.find(p => p.id === id);
+            if (part) {
+                // The search API might not return vehicleInfo if it's separate.
+                // Let's ensure the backend search API returns what we need.
+            }
+        }
+
+        // Recommendation Logic
+        getRecsBtn.addEventListener('click', async () => {
+            if (!selectedPartId) {
+                alert("Please select a part from the autosuggest list before analyzing.");
+                searchInput.focus();
+                return;
+            }
+
+            const id = selectedPartId;
+            resultsDiv.innerHTML = '';
+            loadingDiv.style.display = 'block';
+            targetFitsDisplay.style.display = 'none';
+
+            try {
+                const res = await fetch('/api/recommend', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ glassId: id, region: regionSelect.value })
+                });
+
+                const data = await res.json();
+                loadingDiv.style.display = 'none';
+
+                if (!data.results || data.results.length === 0) {
+                    resultsDiv.innerHTML = '<div class="empty-state"><p>No recommendations found for this part.</p></div>';
+                    return;
+                }
+
+                // Show target glass fitment
+                // We'll get this from the first result's input glass context if possible
+                // Or better, return it in the API response root.
+                if (data.results.length > 0 && data.results[0].info) {
+                    // This is slightly hacky, let's update the API to return the target glass info
+                }
+
+                lastTrace = data.trace;
+                tabReq.textContent = lastTrace.request;
+                tabRes.textContent = lastTrace.response;
+
+                // Extract Target Glass from trace request if needed, 
+                // but let's assume we'll fix the API to return it.
+                const firstLine = lastTrace.request.split('\n')[0];
+                if (firstLine.includes('Target Glass:')) {
+                    targetFitsText.textContent = firstLine.replace('Target Glass:', '').trim();
+                    targetFitsDisplay.style.display = 'block';
+                }
+
+                // Filter items where show is true
+                const visible = data.results.filter(d => d.item.show);
+
+                if (visible.length === 0) {
+                    resultsDiv.innerHTML = '<div class="empty-state"><p>AI filtered out all candidates based on brand guardrails.</p></div>';
+                    return;
+                }
+
+                resultsDiv.innerHTML = visible.map((d, index) => `
+                    <div class="rec-card" style="animation-delay: ${index * 0.05}s">
+                        <div class="score-badge">${d.item.confidence}%</div>
+                        <div class="content">
+                            <div class="header-row">
+                                <h3>${d.info.id}</h3>
+                            </div>
+                            <div class="part-info">
+                                <strong>${d.info.desc}</strong>
+                                ${d.info.detailedDesc ? `<br><span style="font-size: 0.85rem; opacity: 0.8;">${d.info.detailedDesc}</span>` : ''}
+                            </div>
+                            <div class="narrative">"${d.item.suggestion}"</div>
+                        </div>
+                    </div>
+                `).join('');
+
+            } catch (err) {
+                console.error("Fetch Error:", err);
+                loadingDiv.style.display = 'none';
+                resultsDiv.innerHTML = '<div class="empty-state"><p>Error communicating with engine.</p></div>';
+            }
+        });
+
+        // Trace Modal Logic
+        async function openPrompt() {
+            promptModal.style.display = 'flex';
+            if (tabSys.textContent === 'Loading...') {
+                const res = await fetch('/api/prompt');
+                const data = await res.json();
+                tabSys.textContent = data.prompt;
+            }
+        }
+
+        function closePrompt() {
+            promptModal.style.display = 'none';
+        }
+
+        function showTab(tab) {
+            document.querySelectorAll('.modal-tab-btn').forEach(btn => btn.classList.remove('active'));
+            document.querySelectorAll('.trace-content').forEach(content => content.classList.remove('active'));
+
+            event.target.classList.add('active');
+            document.getElementById('tab-' + tab).classList.add('active');
+        }
+
+        // Close suggestions on outside click
+        document.addEventListener('click', (e) => {
+            if (!searchInput.contains(e.target) && !suggestionsDiv.contains(e.target)) {
+                suggestionsDiv.style.display = 'none';
+            }
+        });
+    </script>
+</body>
+
+</html>
